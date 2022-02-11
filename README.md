@@ -20,7 +20,7 @@ The configuration of the simulation itself is handled by a series of "configurat
 As the program runs, and after these values are read, the program instantiates the five set spheres (four larger ones visible in the sample image with a fifth acting as the ground), and then generates a series of random spheres on the ground around.
 It then simulates reverse ray tracing, pixel by pixel, to determine the colour seen at a particular point in the output image.
 
-**Compatibility:** This code has no dependencies outside of the C++ standard library. It was written in Visual Studio 19 on Windows 10, however should be broadly compatible to be useable on any system. To my knowledge the only comptibility issue may come from the output flags used on line 240 of PathTracer.cpp, which configure the filestream used to write the output file. They may not be needed on certain Linux systems. 
+**Compatibility:** This code has no dependencies outside of the C++ standard library. It was written in Visual Studio 19 on Windows 10 using the C++17 language standard, however should be broadly compatible. To my knowledge the only comptibility issue may come from the output flags used on line 240 of PathTracer.cpp, which configure the filestream used to write the output file. They may not be needed on certain Linux systems. 
 
 ## Notes on Ray Tracing ##
 
