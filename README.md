@@ -1,6 +1,6 @@
 # Path-Tracer
 
-##What this project is:##
+## What this project is: ##
 
 This project is a fairly simple reverse ray-tracing renderer, written in C++. It generates a series of random spheres, and uses the principle of reverse ray tracing (or path tracing) to render an image of those spheres.
 
@@ -11,7 +11,7 @@ Currently, the simulation only supports spheres as a shape, and accurately simul
 
 The file PathTracer.cpp is the main file for this project.
 
-##Notes on the code.##
+## Notes on the code. ##
 
 The first thing you'll probably notice about this code is that all but the main file are header files, with only the main file being a .cpp. This is because the objects used in this project are templated.
 The second thing you'll probably notice is that most of the objects used in this project are templated. If I were being a purist about making a path tracer I'd likely have stuck to one type, but I also wanted practice with templated objects to make sure I can use them properly. The datatype used is set under the aliases near the top of the main file.
@@ -22,7 +22,7 @@ It then simulates reverse ray tracing, pixel by pixel, to determine the colour s
 
 **Compatibility:** This code has no dependencies outside of the C++ standard library. It was written in Visual Studio 19 on Windows 10, however should be broadly compatible to be useable on any system. To my knowledge the only comptibility issue may come from the output flags used on line 240 of PathTracer.cpp, which configure the filestream used to write the output file. They may not be needed on certain Linux systems. 
 
-##Notes on Ray Tracing##
+## Notes on Ray Tracing ##
 
 This is just a brief summary on the method of reverse raytracing in case anyone is not familiar.
 In the real world, when we see an object, it is because light from a source collided with that object, was randomly scattered, and just happened to fly in the direction of our eyes. It hits our eyes and our brain translates that into an image.
