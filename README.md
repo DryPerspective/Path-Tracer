@@ -14,7 +14,8 @@ The file PathTracer.cpp is the main file for this project.
 ## Notes on the code. ##
 
 The first thing you'll probably notice about this code is that all but the main file are header files, with only the main file being a .cpp. This is because the objects used in this project are templated.
-The second thing you'll probably notice is that most of the objects used in this project are templated. If I were being a purist about making a path tracer I'd likely have stuck to one type, but for this project I also wanted to set myself an exercise in using templated objects.. The datatype used is set under the aliases near the top of the main file.
+
+The second thing you'll probably notice is that most of the objects used in this project are templated. I'm aware that usually this would be bad practice, but for this project I also wanted to set myself an exercise in using templated objects. The datatype used is set under the aliases near the top of the main file.
 
 The configuration of the simulation itself is handled by a series of "configuration constants" defined at the very top of the main in PathTracer.cpp. These can be altered to make high or low quality images, change the position and orientation of the camera, change the number of spheres generated, etc.
 As the program runs, and after these values are read, the program instantiates the five set spheres (four larger ones visible in the sample image with a fifth acting as the ground), and then generates a series of random spheres on the ground around.
