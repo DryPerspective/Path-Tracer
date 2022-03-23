@@ -1,5 +1,7 @@
 # Path-Tracer
 
+A path-tracing renderer which generates a collection of random spheres, and renders them. Supports opaque, reflective, and transparent spheres.
+
 ## What this project is: ##
 
 This project is a fairly simple reverse ray-tracing renderer, written in C++. It generates a series of random spheres, and uses the principle of reverse ray tracing (or path tracing) to render an image of those spheres.
