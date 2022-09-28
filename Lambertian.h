@@ -9,27 +9,17 @@
 
 #include "Material.h"
 
-template <typename T>
-class Lambertian : public Material<T>
+
+class Lambertian : public Material
 {
+	
+
 private:
-	Vector3D<T> m_albedoColour;
+	Vec3D m_albedoColour;
 public:
-	Lambertian(const Vector3D<T>& inColour) : m_albedoColour(inColour) {}
+	Lambertian(const Vec3D& inColour) : m_albedoColour(inColour) {}
 
-
-	virtual bool isScattered(const Ray<T>& inRay, const HitRecord<T>& inRecord, Vector3D<T>& inColourAtten, Ray<T>& scatteredRay) const override {
-		//Calculate a scattered direction by generating a unit vector inside the unit sphere at the point of collision and with radius equal to the unit normal to the surface.
-		Vector3D<T> scatterDirection{ inRecord.m_normal + Vector3D<T>::randLambertianUnitSphere() };
-
-		//Catch fringe cases where the scatter direction is near zero, e.g when the random Lambertian scatter vector is approx equal to minus the unit normal
-		if (scatterDirection.isNearZero()) scatterDirection = inRecord.m_normal;
-
-		//Then set up the scattered ray.
-		scatteredRay = Ray<T>(inRecord.m_point, scatterDirection);
-		inColourAtten = m_albedoColour;
-		return true;
-	}
+	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, Vec3D& inColourAtten, Ray& scatteredRay) const override;
 };
 #endif
 

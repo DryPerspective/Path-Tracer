@@ -117,7 +117,7 @@ public:
 	// After some vector calculus, we can find that R'_perp = n/n' * (R - cos(theta)N)) and that R'_parallel = -sqrt(1-|R'_perp|^2 N).
 	//Substituting the identity A*B = |A||B|cost(theta) and confining our A and B to unit vectors(giving A*B = cos(theta)), we can express R'_perp in entirely known quantities
 	// R'_perp = n/n' (R + (-R*N)N).
-	static Vector3D<T> refract(const Vector3D<T> inR, const Vector3D<T> inNormal, const T etaOverEtaPrime) {
+	static Vector3D<T> refract(const Vector3D<T>& inR, const Vector3D<T>& inNormal, const T etaOverEtaPrime) {
 		Vector3D<T> unitVectorR{ inR.getUnitVector() };
 		auto cosTheta{ fmin(-unitVectorR.innerProduct(inNormal),1.0) };			//Cos theta can never be above 1, but in computing we may get something slightly above due to floating points.
 		Vector3D<T> rPrimePerp{ (unitVectorR + inNormal.scaledBy(cosTheta)).scaledBy(etaOverEtaPrime) };

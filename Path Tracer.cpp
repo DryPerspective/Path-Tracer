@@ -26,6 +26,8 @@
 #include "Lambertian.h"
 #include "Metal.h"
 #include "Dielectric.h"
+#include "ConfigReader.h"
+
 
 //A couple of type aliases to reduce confusion around exactly what we're talking about, and because most objects here are made from templates.
 // I know templating everything isn't strictly necessary, but I felt it provided good portability (I've seen some people swear by using floats instead of doubles, for instance),
@@ -35,11 +37,12 @@
 //
 //
 using numberType = double;                 //The basic numerical type used to pass around floating point numbers.
-using point3D = Vector3D<numberType>;
-using direction3D = Vector3D<numberType>;
-using colour = Vector3D<numberType>;     //This may seem counterintuitive since RGB values take integer values, but we calculate over a continuous range between 0-1 and normalise to integers later.
-using ray3D = Ray<numberType>;
-using sphere3D = Sphere<numberType>;
+using point3D = Vec3D;
+using direction3D = Vec3D;
+using colour = Vec3D;    //This may seem counterintuitive since RGB values take integer values, but we calculate over a continuous range between 0-1 and normalise to integers later.
+using ray3D = Ray;
+using sphere3D = Sphere;
+using pVector = Physics::PhysicsVector<3>;
 
 
 //Constants. Not included ordinarily and used for much needed math.
@@ -96,11 +99,11 @@ void writeColour(std::ostream& outStream, colour outColour, int samplesPerPixel)
 //We keep on scattering rays until a ray never hits an object again, or until we reach the maximum number of deflections allowed.
 //Each scatter is scaled by the colour attenuation so the first scatter has the most effect etc
 //Then after going through as many objects as we can, we calculate the total colour seen by that ray and return it.
-colour calcColour(const ray3D& inRay, const Hittable<numberType>& inObject, int inDepth) {
-    HitRecord<numberType> tempRecord;
+colour calcColour(const ray3D& inRay, const Hittable& inObject, int inDepth) {
+    HitRecord tempRecord;
 
     //If we previously hit an object and have reached maximum depth
-    if (inDepth <= 0)return colour(0, 0, 0);
+    if (inDepth <= 0)return colour{ 0, 0, 0 };
 
     //If we hit an object and have not reached maximum depth:
     //NB: use of 0.001 as the minimum bound to solve "shadow acne" issues from floating point approximation issues around t=0.
@@ -112,60 +115,89 @@ colour calcColour(const ray3D& inRay, const Hittable<numberType>& inObject, int 
             return calcColour(scatteredRay, inObject, inDepth - 1).scaledByVector(attenuationColour);
         }
         //Otherwise we return pure black.
-        return colour(0, 0, 0);
+        return colour{ 0, 0, 0 };
     }
 
 
     //Background work below here, only triggered if the ray doesn't touch anything. Currently a linear scale from blue to white.
     direction3D unitDirection = inRay.direction().getUnitVector();
     auto backgroundT = 0.5 * (unitDirection.getY() + 1);                                                            //Get a linear scalar along the y axis.
-    return  colour(1.0, 1.0, 1.0).scaledBy(1.0 - backgroundT) + colour(0.5, 0.7, 1.0).scaledBy(backgroundT);      //And return a colour following a blue/white scale.
+    return  colour{ 1.0, 1.0, 1.0 }.scaledBy(1.0 - backgroundT) + colour{ 0.5, 0.7, 1.0 }.scaledBy(backgroundT);      //And return a colour following a blue/white scale.
 }
 
 int main()
 {    
+
+
     //Image settings, measured in pixels.
-    const numberType outImageAspectRatio{ 16.0/9.0 };
-    const int outImageWidth{ 400 };
-    const int outImageHeight{ static_cast<int>(outImageWidth / outImageAspectRatio) };
+    numberType outImageAspectRatio{ 16.0/9.0 };
+    int outImageWidth{ 400 };
+    int outImageHeight{ static_cast<int>(outImageWidth / outImageAspectRatio) };
 
     //Camera settings.
     //The camera can be called with specific settings, namely (and in order): 
     // Camera position, Point the center of the camera is looking at, Camera "upwards" orientation, Camera viewport aspect ratio, camera focal length, and camera vertical FoV.
     // There is also a default constructor Camera() which creates a camera with default values.
-    point3D cameraPosition(8,  2,  3);                                                               //Position of the camera, defaults to (0,0,0)
-    point3D cameraLookingAt(0, 0, 0);                                                               //Point the camera is looking at and focused on. Defaults to (0,0,-1)
-    direction3D cameraUpOrientation(0, 1, 0);                                                       //"Upwards" orientation for the camera. Defaults to (0,1,0)
+    pVector cameraPosition{ 8,  2,  3 };                                                               //Position of the camera, defaults to (0,0,0)
+    pVector cameraLookingAt{ 0, 0, 0 };                                                               //Point the camera is looking at and focused on. Defaults to (0,0,-1)
+    pVector cameraUpOrientation{ 0, 1, 0 };                                                       //"Upwards" orientation for the camera. Defaults to (0,1,0)
     numberType cameraFocalLength{ 1 };                                                              //Camera focal length, i.e. the distance between the camera and the viewport. Defaults to 1
     numberType cameraVerticalFoV{ 60 };                                                             //Camera vertical field of view angle, measured in degrees. Defaults to 60.
     numberType cameraApertureSize{ 0.1 };                                                          //Simulated aperture size for depth of field. Defaults to 0.1
     numberType cameraFocusDistance{ (cameraLookingAt-cameraPosition).length() };                    //Simulated focus distance for depth of field. Defaults to 10.
-    Camera<numberType> simCamera(cameraPosition,cameraLookingAt,cameraUpOrientation,outImageAspectRatio,cameraFocalLength,cameraVerticalFoV,cameraApertureSize,cameraFocusDistance);
+   
     
 
     //Antialiasing value of number of slightly randomised rays to send per pixel.
-    const int raysPerPixel{ 100 };
+    int raysPerPixel{ 100 };
 
     //Material maximum depth, i.e. number of times to generate a random reflected ray until returning pure black.
-    const int materialMaximumDepth{ 50 };   
+    int materialMaximumDepth{ 50 };   
+
+
+    try {
+        std::cout << "Loading settings from configuration file.\n";
+        IO::ConfigReader config("config.txt");
+        //Image Settings
+        config.readValue("imageAspectRatio", outImageAspectRatio);
+        config.readValue("imageWidth", outImageWidth);
+        //Simulation Settings
+        config.readValue("raysPerPixel", raysPerPixel);
+        config.readValue("materialMaxDepth", materialMaximumDepth);
+        //Camera Settings
+        config.readValue("cameraPosition", cameraPosition);
+        config.readValue("cameraLookingAt", cameraLookingAt);
+        config.readValue("cameraUpOrient", cameraUpOrientation);
+        config.readValue("focalLength", cameraFocalLength);
+        config.readValue("verticalFOV", cameraVerticalFoV);
+        config.readValue("apertureSize", cameraApertureSize);
+        config.close();
+
+        std::cout << "All values read from file correctly.\n";
+    }
+    catch (IO::ConfigReader::ConfigException& except) {
+        std::cout << "Error reading data from config.txt: " << except.what() << '\n';
+        std::cout << "Loading default values for those variables.\n";
+    }
+    Camera simCamera(cameraPosition, cameraLookingAt, cameraUpOrientation, outImageAspectRatio, cameraFocalLength, cameraVerticalFoV, cameraApertureSize, cameraFocusDistance);
 
     //World settings
     //i.e where all our objects live.
     //First we create the materials needed for our five fixed spheres.
-    auto materialGround{ std::make_shared<Lambertian<numberType>>(colour(0.5,0.5,0.5)) };            //A Pale diffuse material to act as the ground.
-    auto materialRedDiffuse{ std::make_shared<Lambertian<numberType>>(colour(0.9,0.1,0.1)) };        //A reddish diffuse material.
-    auto materialGreyMetal{ std::make_shared<Metal<numberType>>(colour(0.8,0.8,0.8), 0) };         //A smooth bright metal
-    auto materialGreyFuzzy{ std::make_shared<Metal<numberType>>(colour(0.8,0.8,0.8), 0.8) };       //A very fuzzy metal
-    auto materialDielectric{ std::make_shared<Dielectric<numberType>>(1.5) };                      //A simple dielectric.
+    auto materialGround{ std::make_shared<Lambertian>(colour{0.5,0.5,0.5}) };            //A Pale diffuse material to act as the ground.
+    auto materialRedDiffuse{ std::make_shared<Lambertian>(colour{0.9,0.1,0.1}) };        //A reddish diffuse material.
+    auto materialGreyMetal{ std::make_shared<Metal>(colour{0.8,0.8,0.8}, 0) };         //A smooth bright metal
+    auto materialGreyFuzzy{ std::make_shared<Metal>(colour{0.8,0.8,0.8}, 0.8) };       //A very fuzzy metal
+    auto materialDielectric{ std::make_shared<Dielectric>(1.5) };                      //A simple dielectric.
 
     //We create our list of objects, and instantiate the four larger spheres we use as a clear demo for the materials.
     //We also create one very large sphere to act as the ground.
-    HittableList<numberType> worldObjects;
-    worldObjects.add(std::make_shared<sphere3D>(point3D(2,      1,  4),    1,     materialRedDiffuse));      //A small sphere to act as our test case. NB: original position of (0,1,0)
-    worldObjects.add(std::make_shared<sphere3D>(point3D(0, -1000,  -1),     1000,       materialGround));    //A big sphere to act as the ground
-    worldObjects.add(std::make_shared<sphere3D>(point3D(0,     1,  2),     1,     materialDielectric)); 
-    worldObjects.add(std::make_shared<sphere3D>(point3D(0,      1,  -2),       1,     materialGreyFuzzy));
-    worldObjects.add(std::make_shared<sphere3D>(point3D(2,      1,  -6), 1, materialGreyMetal));
+    HittableList worldObjects;
+    worldObjects.add(std::make_shared<sphere3D>(point3D{ 2,      1,  4 }, 1, materialRedDiffuse));      //A small sphere to act as our test case. NB: original position of (0,1,0)
+    worldObjects.add(std::make_shared<sphere3D>(point3D{ 0, -1000,  -1 }, 1000, materialGround));    //A big sphere to act as the ground
+    worldObjects.add(std::make_shared<sphere3D>(point3D{ 0,     1,  2 }, 1, materialDielectric));
+    worldObjects.add(std::make_shared<sphere3D>(point3D{ 0,      1,  -2 }, 1, materialGreyFuzzy));
+    worldObjects.add(std::make_shared<sphere3D>(point3D{ 2,      1,  -6 }, 1, materialGreyMetal));
 
     
     //Next we want to generate a large amount of random spheres to populate our scene. Random sphere choice makes for a better test of the system than a premade case.
@@ -188,7 +220,7 @@ int main()
             ++loopCounter;
             if (loopCounter > 50)break;
             //And if we're clear, assign a random position to our sphere
-            sphereCenter = point3D(randNumberBetween(-10, 10), randomNumberForRadius, randNumberBetween(-10, 10));    //Generate a sphere.
+            sphereCenter = point3D{ randNumberBetween(-10, 10), randomNumberForRadius, randNumberBetween(-10, 10) };    //Generate a sphere.
             bool isClipped{ false };
             for (int i = 0; i < worldObjects.length(); ++i) {
                 //If the new sphere will clip inside any object.
@@ -210,23 +242,23 @@ int main()
         else loopCounter = 0;
 
 
-        std::shared_ptr<Material<numberType>> sphereMaterial;
+        std::shared_ptr<Material> sphereMaterial;
 
         //We want mostly diffuse
         if (randomNumberForMaterial < 0.6) {
-            colour sphereColour{ colour::randVector(0,1) };
-            sphereMaterial = std::make_shared<Lambertian<numberType>>(sphereColour);
+            colour sphereColour{ Vec3D::randVector(0,1) };
+            sphereMaterial = std::make_shared<Lambertian>(sphereColour);
         }
         //With about 30% metallic.
         else if (randomNumberForMaterial < 0.9) {
-            colour sphereColour{ colour::randVector(0.6,1) };
+            colour sphereColour{ Vec3D::randVector(0.6,1) };
             auto randomFuzziness{ randNumberBetween(0,1) / 2 };
-            sphereMaterial = std::make_shared<Metal<numberType>>(sphereColour, randomFuzziness);
+            sphereMaterial = std::make_shared<Metal>(sphereColour, randomFuzziness);
             
         }
         //And 10% dielectric
         else {
-            sphereMaterial = std::make_shared<Dielectric<numberType>>(1.5);
+            sphereMaterial = std::make_shared<Dielectric>(1.5);
         }
 
         //And after creating our position, radius, and material, we add the sphere to our scene.
@@ -249,7 +281,7 @@ int main()
         std::cout << "Scanlines Remaining: " << j << '\n';
         for (int i = 0; i < outImageWidth; ++i) {
             //For each pixel, we sum the values of all the colours read by each ray, and then divide them through by the number of rays per pixel in the writeColour function
-            colour pixelColour(0, 0, 0);
+            colour pixelColour{ 0, 0, 0 };
             //For each pixel, generate rays distributed randomly inside that pixel (antialiasing step)
             for (int s = 0; s < raysPerPixel; ++s) {               
                 //Generate X/Y coordinates normalised inside a particular pixel                
