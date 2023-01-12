@@ -16,6 +16,8 @@
 #include <cstdio>           //This and the above includes used to create and write to an output file (and the console)
 #include <random>           //For the mersenne twister used to generate random spheres
 #include <ctime>            //To use the system time as the seed for the Mersenne.
+#include <thread>
+#include <atomic>
 
 
 #include "Vector3D.h"
@@ -132,7 +134,7 @@ int main()
     //Image settings, measured in pixels.
     numberType outImageAspectRatio{ 16.0/9.0 };
     int outImageWidth{ 400 };
-    int outImageHeight{ static_cast<int>(outImageWidth / outImageAspectRatio) };
+    
 
     //Camera settings.
     //The camera can be called with specific settings, namely (and in order): 
@@ -152,7 +154,9 @@ int main()
     int raysPerPixel{ 100 };
 
     //Material maximum depth, i.e. number of times to generate a random reflected ray until returning pure black.
-    int materialMaximumDepth{ 50 };   
+    int materialMaximumDepth{ 50 }; 
+
+    int numberOfThreads{ 2 };
 
 
     try {
@@ -171,6 +175,7 @@ int main()
         config.readValue("focalLength", cameraFocalLength);
         config.readValue("verticalFOV", cameraVerticalFoV);
         config.readValue("apertureSize", cameraApertureSize);
+        config.readValue("numberOfThreads", numberOfThreads);
         config.close();
 
         std::cout << "All values read from file correctly.\n";
@@ -179,6 +184,13 @@ int main()
         std::cout << "Error reading data from config.txt: " << except.what() << '\n';
         std::cout << "Loading default values for those variables.\n";
     }
+    if (numberOfThreads > static_cast<int>(std::thread::hardware_concurrency())) {
+        std::cout << "Error: " << numberOfThreads << " requested but the environment only supports " << std::thread::hardware_concurrency() << '\n';
+        std::cout << "Setting total threads to " << std::thread::hardware_concurrency() << '\n';
+        numberOfThreads = static_cast<int>(std::thread::hardware_concurrency());
+    }
+
+    int outImageHeight{ static_cast<int>(outImageWidth / outImageAspectRatio) };
     Camera simCamera(cameraPosition, cameraLookingAt, cameraUpOrientation, outImageAspectRatio, cameraFocalLength, cameraVerticalFoV, cameraApertureSize, cameraFocusDistance);
 
     //World settings
@@ -280,21 +292,56 @@ int main()
     for (int j = outImageHeight-1; j >=0; --j) {
         std::cout << "Scanlines Remaining: " << j << '\n';
         for (int i = 0; i < outImageWidth; ++i) {
-            //For each pixel, we sum the values of all the colours read by each ray, and then divide them through by the number of rays per pixel in the writeColour function
+            
             colour pixelColour{ 0, 0, 0 };
-            //For each pixel, generate rays distributed randomly inside that pixel (antialiasing step)
-            for (int s = 0; s < raysPerPixel; ++s) {               
-                //Generate X/Y coordinates normalised inside a particular pixel                
-                auto normalisedX = static_cast<numberType>(i + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageWidth) - 1);
-                auto normalisedY = static_cast<numberType>(j + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageHeight) - 1);
-                //Then add them to a ray
-                ray3D currentRay = simCamera.getCurrentRay(normalisedX, normalisedY);
-                //And sum them into the colour
-                pixelColour += calcColour(currentRay, worldObjects, materialMaximumDepth);
+            colour pixelColour2{ 0,0,0 };
+            
+
+
+            /*Concurrency time.The design decision was made to use multithreading at the level of rays per pixel.
+            * This is because within each pixel, the process of casting a ray happens completely independently of the other rays cast within that pixel,
+            * and this level had he added benefit that the total result for each pixel is a simple sum of the result of each ray's calculation.
+            * This means that each thread's calculation can be performed independently, and summed into some thread-local "total" colour for that thread.
+            * After every thread has been rejoined, their colours could be summed into the final colour value for that pixel and written to the file.
+            */
+            //An atomic counter of the "raysToGo" in this current pixel. As the order of each raycast doesn't matter, each thread can simply ensure that this is
+            //above 0 and decrement it as needed.
+            std::atomic<int> raysToGo{ raysPerPixel };
+            std::vector<colour> partialColours(numberOfThreads, { 0,0,0 });
+            
+
+            //For each pixel, we sum the values of all the colours read by each ray, and then divide them through by the number of rays per pixel in the writeColour function
+            //A big beast of a closure - adapting the old primary raycast code into something which can be passed onto a thread.
+            auto sumColour = [i, j, outImageHeight, outImageWidth, worldObjects, materialMaximumDepth, &simCamera, &raysToGo](colour& partialColour) {
+                
+                while (--raysToGo >= 0) {   //>= to prevent an off-by-one when counting down
+                    //For each pixel, generate rays distributed randomly inside that pixel (antialiasing step)
+                    //Generate X/Y coordinates normalised inside a particular pixel                
+                    auto normalisedX = static_cast<numberType>(i + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageWidth) - 1);
+                    auto normalisedY = static_cast<numberType>(j + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageHeight) - 1);
+                    //Then add them to a ray
+                    ray3D currentRay = simCamera.getCurrentRay(normalisedX, normalisedY);
+                    //And sum them into the colour
+                    partialColour += calcColour(currentRay, worldObjects, materialMaximumDepth);
+                }
+            };
+
+            std::vector<std::thread> threads;
+            for (auto s = 0; s < numberOfThreads; ++s) {
+                threads.emplace_back(sumColour, std::ref(partialColours[s]));
             }
+            for (auto& t : threads) {
+                t.join();
+            }
+            colour resultColour{};
+            for (auto& col : partialColours) {
+                resultColour += std::move(col);
+            }
+            
+            raysToGo = raysPerPixel;    //Reset raysToGo for the next pixel.
 
             //Then once we have our composite colour from all rays, use this function to scale it accordingly and write it to the file.
-            writeColour(outImageStream,pixelColour,raysPerPixel);
+            writeColour(outImageStream,resultColour,raysPerPixel);
 
             
         }
