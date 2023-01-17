@@ -15,7 +15,6 @@
 #include <fstream>             
 #include <cstdio>           //This and the above includes used to create and write to an output file (and the console)
 #include <random>           //For the mersenne twister used to generate random spheres
-#include <ctime>            //To use the system time as the seed for the Mersenne.
 #include <thread>
 #include <atomic>
 
@@ -48,7 +47,7 @@ using pVector = Physics::PhysicsVector<3>;
 
 
 //Constants. Not included ordinarily and used for much needed math.
-const numberType infinity = std::numeric_limits<numberType>::infinity();
+constexpr numberType infinity = std::numeric_limits<numberType>::infinity();
 
 
 /*
@@ -58,7 +57,7 @@ const numberType infinity = std::numeric_limits<numberType>::infinity();
 */
 //Generates a random real number between the input arguments. This distribution is only used when randomly generating and placing spheres, and when generating antialiasing rays inside a single pixel.
 numberType randNumberBetween(numberType inMin, numberType inMax) {
-    static std::mt19937 mersenne{ static_cast<std::mt19937::result_type>(std::time(nullptr)) };
+    static std::mt19937 mersenne{ std::random_device{}() };
     std::uniform_real_distribution<numberType> distribution{ inMin,inMax };
     return distribution(mersenne);
 }
@@ -156,7 +155,7 @@ int main()
     //Material maximum depth, i.e. number of times to generate a random reflected ray until returning pure black.
     int materialMaximumDepth{ 50 }; 
 
-    int numberOfThreads{ 2 };
+    int numberOfThreads{ 4 };
 
 
     try {
@@ -168,6 +167,7 @@ int main()
         //Simulation Settings
         config.readValue("raysPerPixel", raysPerPixel);
         config.readValue("materialMaxDepth", materialMaximumDepth);
+        config.readValue("numberOfThreads", numberOfThreads);
         //Camera Settings
         config.readValue("cameraPosition", cameraPosition);
         config.readValue("cameraLookingAt", cameraLookingAt);
@@ -175,7 +175,6 @@ int main()
         config.readValue("focalLength", cameraFocalLength);
         config.readValue("verticalFOV", cameraVerticalFoV);
         config.readValue("apertureSize", cameraApertureSize);
-        config.readValue("numberOfThreads", numberOfThreads);
         config.close();
 
         std::cout << "All values read from file correctly.\n";
@@ -183,6 +182,18 @@ int main()
     catch (IO::ConfigReader::ConfigException& except) {
         std::cout << "Error reading data from config.txt: " << except.what() << '\n';
         std::cout << "Loading default values for those variables.\n";
+        outImageAspectRatio = 16.0 / 9.0;
+        outImageWidth = 400;
+        raysPerPixel = 100;
+        materialMaximumDepth = 50;
+        numberOfThreads = 4;
+
+        cameraPosition = { 8,2,3 };
+        cameraLookingAt = { 0,0,0 };
+        cameraFocalLength = 1;
+        cameraVerticalFoV = 60;
+        cameraApertureSize = 0.1;
+
     }
     if (numberOfThreads > static_cast<int>(std::thread::hardware_concurrency())) {
         std::cout << "Error: " << numberOfThreads << " requested but the environment only supports " << std::thread::hardware_concurrency() << '\n';

@@ -12,7 +12,7 @@ Vec3D Vec3D::scaledByVector(const Vec3D& inVector) const {
 
 Vec3D Vec3D::randVector(double inMin, double inMax) {
 	std::uniform_real_distribution<double> distribution{ inMin, inMax };
-	static std::mt19937 mersenne{ static_cast<std::mt19937::result_type>(std::time(nullptr)) };
+	static std::mt19937 mersenne{ std::random_device{}() };
 	return Vec3D{ distribution(mersenne), distribution(mersenne), distribution(mersenne) };
 }
 
