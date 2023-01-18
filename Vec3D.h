@@ -18,6 +18,8 @@
 
 class Vec3D : public Physics::PhysicsVector<3>
 {
+
+
 public:
 	//Constructors. As we have no new member data to set up, we can rely on the base class' constructors to do most of the heavy lifting.
 	Vec3D() : PhysicsVector<3>() {}
@@ -65,7 +67,7 @@ public:
 	static Vec3D refract(const Vec3D& inR, const Vec3D& inNormal, const double etaOverEtaPrime);
 
 
-
+	
 
 
 
