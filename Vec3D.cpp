@@ -1,14 +1,18 @@
 #include "Vec3D.h"
 
+#include <mutex>
+
 
 /*
 * While a global in the cpp file would ordinarily be all sorts of bad practice, this class specifically needs to be able to generate random numbers on the fly.
 * It was decided that a single static prng to be called by multiple functions was likely more performant than each function call needing to materialise a PRNG, call it once
 * and destroy it again.
-* Thread_local because multiple threads will be accessing it via a non-const member function repeatedly.
+* We use a mutex to prevent data races
 */
 namespace {
-	thread_local std::mt19937 mersenne{ std::random_device{}() };
+	static std::mt19937 mersenne{ std::random_device{}() };
+	static std::uniform_real_distribution<double> dist{ 0.0, 1.0 };
+	std::mutex m;
 }
 
 //A tad on the mathematically meaningless side, but we simply iterate to transform (a,b,c) * (x,y,z) to (ax,by,cz)
@@ -23,12 +27,13 @@ Vec3D Vec3D::scaledByVector(const Vec3D& inVector) const {
 
 Vec3D Vec3D::randVector(double inMin, double inMax) {
 	std::uniform_real_distribution<double> distribution{ inMin, inMax };
-	
+	std::lock_guard<std::mutex> lck(m);
 	return Vec3D{ distribution(mersenne), distribution(mersenne), distribution(mersenne) };
 }
 
 Vec3D Vec3D::randInUnitSphere() {
-	static std::uniform_real_distribution<double> dist{0.0, 1.0};
+	
+	std::lock_guard<std::mutex> lck(m);
 	double theta{ 2 * 3.14159265358979323846 * dist(mersenne) };
 	double phi = std::acos(1 - 2 * dist(mersenne));
 	return Vec3D{ std::sin(phi) * std::cos(theta), std::sin(phi) * std::sin(theta), std::cos(phi) };
