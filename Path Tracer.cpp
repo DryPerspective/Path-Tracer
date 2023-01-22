@@ -16,7 +16,6 @@
 #include <cstdio>           //This and the above includes used to create and write to an output file (and the console)
 #include <random>           //For the mersenne twister used to generate random spheres
 #include <thread>
-#include <atomic>
 
 
 #include "Vector3D.h"
@@ -28,6 +27,8 @@
 #include "Metal.h"
 #include "Dielectric.h"
 #include "ConfigReader.h"
+
+#include "SimpleTimer.h"
 
 
 //A couple of type aliases to reduce confusion around exactly what we're talking about, and because most objects here are made from templates.
@@ -44,10 +45,6 @@ using colour = Vec3D;    //This may seem counterintuitive since RGB values take 
 using ray3D = Ray;
 using sphere3D = Sphere;
 using pVector = Physics::PhysicsVector<3>;
-
-
-//Constants. Not included ordinarily and used for much needed math.
-constexpr numberType infinity = std::numeric_limits<numberType>::infinity();
 
 
 /*
@@ -100,11 +97,13 @@ void writeColour(std::ostream& outStream, colour outColour, int samplesPerPixel)
 //We keep on scattering rays until a ray never hits an object again, or until we reach the maximum number of deflections allowed.
 //Each scatter is scaled by the colour attenuation so the first scatter has the most effect etc
 //Then after going through as many objects as we can, we calculate the total colour seen by that ray and return it.
-colour calcColour(const ray3D& inRay, const Hittable& inObject, int inDepth) {
+colour calcColour(const ray3D& inRay, const Hittable& inObject, int inDepth, double infinity) {
     HitRecord tempRecord;
 
     //If we previously hit an object and have reached maximum depth
     if (inDepth <= 0)return colour{ 0, 0, 0 };
+
+
 
     //If we hit an object and have not reached maximum depth:
     //NB: use of 0.001 as the minimum bound to solve "shadow acne" issues from floating point approximation issues around t=0.
@@ -113,7 +112,7 @@ colour calcColour(const ray3D& inRay, const Hittable& inObject, int inDepth) {
         colour attenuationColour;
         //If we can scatter cleanly, we do.
         if (tempRecord.m_materialPtr->isScattered(inRay, tempRecord, attenuationColour, scatteredRay)) {
-            return calcColour(scatteredRay, inObject, inDepth - 1).scaledByVector(attenuationColour);
+            return calcColour(scatteredRay, inObject, inDepth - 1, infinity).scaledByVector(attenuationColour);
         }
         //Otherwise we return pure black.
         return colour{ 0, 0, 0 };
@@ -195,6 +194,11 @@ int main()
         cameraApertureSize = 0.1;
 
     }
+    if (numberOfThreads < 1) {
+        std::cout << "Error: " << numberOfThreads << " requested but this is an invalid value.\n";
+        std::cout << "Setting total threads to default value (2)\n";
+    }
+
     if (numberOfThreads > static_cast<int>(std::thread::hardware_concurrency())) {
         std::cout << "Error: " << numberOfThreads << " requested but the environment only supports " << std::thread::hardware_concurrency() << '\n';
         std::cout << "Setting total threads to " << std::thread::hardware_concurrency() << '\n';
@@ -297,49 +301,59 @@ int main()
     //Setup line to initialise the image.
     outImageStream << "P3\n" << outImageWidth << ' ' << outImageHeight << "\n255\n";
 
+    //Constant infinity required for calculating if a ray has not collided with anything.
+    constexpr numberType infinity = std::numeric_limits<numberType>::infinity();
+
+    //For each pixel, we sum the values of all the colours read by each ray, and then divide them through by the number of rays per pixel in the writeColour function
+    //This closure class allows us to generate rays, bounce them off the various objects, and create a composite colour representing all the rays it simulates.
+    auto sumColour = [outImageHeight, outImageWidth, infinity, &worldObjects, materialMaximumDepth, &simCamera](colour& partialColour, int i, int j, int raysToCalc) {
+
+        while (--raysToCalc >= 0) {   //>= to prevent an off-by-one when counting down
+            //For each pixel, generate rays distributed randomly inside that pixel (antialiasing step)
+            //Generate X/Y coordinates normalised inside a particular pixel                
+            auto normalisedX = static_cast<numberType>(i + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageWidth) - 1);
+            auto normalisedY = static_cast<numberType>(j + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageHeight) - 1);
+            //Then add them to a ray
+            ray3D currentRay = simCamera.getCurrentRay(normalisedX, normalisedY);
+            //And sum them into the colour
+            partialColour += calcColour(currentRay, worldObjects, materialMaximumDepth, infinity);
+        }
+    };
+
+    //The conceptually simple way for each thread to count up how many rays it needs to send would be an atomic variable shared between all threads to act as a counter.
+    //However, atomic operations are expensive, and each thread will be doing approximately the same amount of work anyway, so its likely faster to simply divide up the amount of work
+    //and pass a single integer to each thread to represent it.
+    int raysPerThread{ raysPerPixel / numberOfThreads };
+
     //Note that I use j as the outer variable here. While not the usual convention this is by design. It's easier to think as position[i][j] as analogous to position(x,y).
     //This preserves that while allowing for a proper scanline countdown.
-    
+    utility::SimpleTimer t;
     for (int j = outImageHeight-1; j >=0; --j) {
         std::cout << "Scanlines Remaining: " << j << '\n';
         for (int i = 0; i < outImageWidth; ++i) {
             
             colour pixelColour{ 0, 0, 0 };
-            colour pixelColour2{ 0,0,0 };
-            
+            colour pixelColour2{ 0,0,0 };           
 
 
-            /*Concurrency time.The design decision was made to use multithreading at the level of rays per pixel.
+            /*
+            * Concurrency time.The design decision was made to use multithreading at the level of rays per pixel.
             * This is because within each pixel, the process of casting a ray happens completely independently of the other rays cast within that pixel,
             * and this level had he added benefit that the total result for each pixel is a simple sum of the result of each ray's calculation.
             * This means that each thread's calculation can be performed independently, and summed into some thread-local "total" colour for that thread.
             * After every thread has been rejoined, their colours could be summed into the final colour value for that pixel and written to the file.
             */
-            //An atomic counter of the "raysToGo" in this current pixel. As the order of each raycast doesn't matter, each thread can simply ensure that this is
-            //above 0 and decrement it as needed.
-            std::atomic<int> raysToGo{ raysPerPixel };
-            std::vector<colour> partialColours(numberOfThreads, { 0,0,0 });
-            
-
-            //For each pixel, we sum the values of all the colours read by each ray, and then divide them through by the number of rays per pixel in the writeColour function
-            //A big beast of a closure - adapting the old primary raycast code into something which can be passed onto a thread.
-            auto sumColour = [i, j, outImageHeight, outImageWidth, worldObjects, materialMaximumDepth, &simCamera, &raysToGo](colour& partialColour) {
-                
-                while (--raysToGo >= 0) {   //>= to prevent an off-by-one when counting down
-                    //For each pixel, generate rays distributed randomly inside that pixel (antialiasing step)
-                    //Generate X/Y coordinates normalised inside a particular pixel                
-                    auto normalisedX = static_cast<numberType>(i + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageWidth) - 1);
-                    auto normalisedY = static_cast<numberType>(j + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageHeight) - 1);
-                    //Then add them to a ray
-                    ray3D currentRay = simCamera.getCurrentRay(normalisedX, normalisedY);
-                    //And sum them into the colour
-                    partialColour += calcColour(currentRay, worldObjects, materialMaximumDepth);
-                }
-            };
-
+            //"Partial" colours - one per thread.
+            std::vector<colour> partialColours(numberOfThreads, { 0,0,0 });            
             std::vector<std::thread> threads;
-            for (auto s = 0; s < numberOfThreads; ++s) {
-                threads.emplace_back(sumColour, std::ref(partialColours[s]));
+
+            //In the event that raysPerPixel % numberOfThreads != 0, raysPerThread will undercount the amount of rays needed per thread.
+            //As such, if such a descrepency exists, the otherwise missing rays are calculated on the first thread.
+            threads.emplace_back(sumColour, std::ref(partialColours[0]), i, j, raysPerThread + (raysPerPixel % numberOfThreads));
+
+
+            for (auto s = 1; s < numberOfThreads; ++s) {
+                threads.emplace_back(sumColour, std::ref(partialColours[s]),i ,j, raysPerThread);
             }
             for (auto& t : threads) {
                 t.join();
@@ -349,13 +363,13 @@ int main()
                 resultColour += std::move(col);
             }
             
-            raysToGo = raysPerPixel;    //Reset raysToGo for the next pixel.
-
+            
             //Then once we have our composite colour from all rays, use this function to scale it accordingly and write it to the file.
             writeColour(outImageStream,resultColour,raysPerPixel);
 
             
         }
     }
+    std::cout << "Elapsed: " << t.elapsed();
 }
 
