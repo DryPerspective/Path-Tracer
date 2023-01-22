@@ -10,8 +10,8 @@
 * We use a mutex to prevent data races
 */
 namespace {
-	static std::mt19937 mersenne{ std::random_device{}() };
-	static std::uniform_real_distribution<double> dist{ 0.0, 1.0 };
+	std::mt19937 mersenne{ std::random_device{}() };
+	std::uniform_real_distribution<double> dist{ 0.0, 1.0 };
 	std::mutex m;
 }
 
@@ -19,7 +19,7 @@ namespace {
 Vec3D Vec3D::scaledByVector(const Vec3D& inVector) const {
 	Vec3D output;
 	for (int i = 0; i < 3; ++i) {
-		output.setAt(i, (this->at(i) * inVector.at(i)));
+		output.setAt(i, (this->operator[](i) * inVector[i]));
 	}
 	return output;
 }
@@ -34,7 +34,7 @@ Vec3D Vec3D::randVector(double inMin, double inMax) {
 Vec3D Vec3D::randInUnitSphere() {
 	
 	std::lock_guard<std::mutex> lck(m);
-	double theta{ 2 * 3.14159265358979323846 * dist(mersenne) };
+	double theta{ 2 * 3.14159265358979323846 * dist(mersenne) };	//Magic pi. Not an ideal piece of code but we only use it once.
 	double phi = std::acos(1 - 2 * dist(mersenne));
 	return Vec3D{ std::sin(phi) * std::cos(theta), std::sin(phi) * std::sin(theta), std::cos(phi) };
 
