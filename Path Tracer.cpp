@@ -27,6 +27,7 @@
 #include "Metal.h"
 #include "Dielectric.h"
 #include "ConfigReader.h"
+#include "VectorFunc.h"
 
 #include "SimpleTimer.h"
 
@@ -39,9 +40,9 @@
 //
 //
 using numberType = double;                 //The basic numerical type used to pass around floating point numbers.
-using point3D = Vec3D;
-using direction3D = Vec3D;
-using colour = Vec3D;    //This may seem counterintuitive since RGB values take integer values, but we calculate over a continuous range between 0-1 and normalise to integers later.
+using point3D = Physics::PhysicsVector<3>;
+using direction3D = Physics::PhysicsVector<3>;
+using colour = Physics::PhysicsVector<3>;    //This may seem counterintuitive since RGB values take integer values, but we calculate over a continuous range between 0-1 and normalise to integers later.
 using ray3D = Ray;
 using sphere3D = Sphere;
 using pVector = Physics::PhysicsVector<3>;
@@ -112,7 +113,7 @@ colour calcColour(const ray3D& inRay, const Hittable& inObject, int inDepth, dou
         colour attenuationColour;
         //If we can scatter cleanly, we do.
         if (tempRecord.m_materialPtr->isScattered(inRay, tempRecord, attenuationColour, scatteredRay)) {
-            return calcColour(scatteredRay, inObject, inDepth - 1, infinity).scaledByVector(attenuationColour);
+            return Physics::scaledByVector(calcColour(scatteredRay, inObject, inDepth - 1, infinity), (attenuationColour));
         }
         //Otherwise we return pure black.
         return colour{ 0, 0, 0 };
@@ -273,12 +274,12 @@ int main()
 
         //We want mostly diffuse
         if (randomNumberForMaterial < 0.6) {
-            colour sphereColour{ Vec3D::randVector(0,1) };
+            colour sphereColour{ Physics::randVector(0,1) };
             sphereMaterial = std::make_shared<Lambertian>(sphereColour);
         }
         //With about 30% metallic.
         else if (randomNumberForMaterial < 0.9) {
-            colour sphereColour{ Vec3D::randVector(0.6,1) };
+            colour sphereColour{ Physics::randVector(0.6,1) };
             auto randomFuzziness{ randNumberBetween(0,1) / 2 };
             sphereMaterial = std::make_shared<Metal>(sphereColour, randomFuzziness);
             

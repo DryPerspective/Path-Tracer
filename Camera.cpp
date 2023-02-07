@@ -1,5 +1,7 @@
 #include "Camera.h"
 
+#include "VectorFunc.h"
+
 
 
 void Camera::setupCamera() {
@@ -35,7 +37,7 @@ Camera::Camera() {
 
 Ray Camera::getCurrentRay(double inputX, double inputY) const {
 	//Generate an offset on the unit disk and scale it by the thin lens radius (determined by aperture size)
-	Vec3D randDiskVector{ Vec3D::randInUnitDisk().scaledBy(m_lensRadius) };
+	Vec3D randDiskVector{ Physics::randInUnitDisk().scaledBy(m_lensRadius) };
 	//Then orient it with the camera.
 	Vec3D apertureOffset{ m_positiveHorizontal.scaledBy(randDiskVector.getX()) + m_positiveVertical.scaledBy(randDiskVector.getY()) };
 

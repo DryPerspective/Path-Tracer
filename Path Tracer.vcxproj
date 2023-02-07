@@ -164,7 +164,7 @@
     <ClCompile Include="Path Tracer.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Sphere.cpp" />
-    <ClCompile Include="Vec3D.cpp" />
+    <ClCompile Include="VectorFunc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -176,7 +176,7 @@
     <ClInclude Include="Metal.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Sphere.h" />
-    <ClInclude Include="Vec3D.h" />
+    <ClInclude Include="VectorFunc.h" />
     <ClInclude Include="Vector3D.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

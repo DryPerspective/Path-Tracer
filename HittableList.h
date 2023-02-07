@@ -39,7 +39,7 @@ public:
 	virtual double minDistanceApart() const override;
 
 	//Return the center of all points in the system, on "average"
-	virtual Vec3D getCenter() const override;
+	virtual Physics::PhysicsVector<3> getCenter() const override;
 
 };
 #endif

@@ -14,10 +14,11 @@
 
 
 
-class Camera
+class Camera final
 {
 
 private:
+	using Vec3D = Physics::PhysicsVector<3>;
 
 	//Member data. Some default velues are provided.
 	Vec3D m_cameraPosition{ 0,0,0 };

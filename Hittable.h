@@ -8,6 +8,7 @@
 #include <memory>	//For shared pointers.
 
 #include "Ray.h"
+#include "PhysicsVector.h"
 
 //Forward declare our Material class as we need pointers to it in the HitRecord struct, but we can't #include it this early or we'd have circular depencency issues.
 class Material;
@@ -16,17 +17,17 @@ class Material;
 //This record will typically be passed by non-const reference into functions which calculate hit data and amended inside that function so that the hit data can be used elsewhere.
 
 struct HitRecord {
-	Vec3D m_point;									//The point of collision
-	Vec3D m_normal;									//The normal to the point of collision. The convention used here is that it will always be pointing in the opposite direction to the incoming ray.
+	Physics::PhysicsVector<3> m_point;									//The point of collision
+	Physics::PhysicsVector<3> m_normal;									//The normal to the point of collision. The convention used here is that it will always be pointing in the opposite direction to the incoming ray.
 	std::shared_ptr<Material> m_materialPtr;		//A pointer to the material of the object in the collision.
 	double		m_interval{ 0 };					//The interval along the ray at which the collision occurred.
 	bool		m_frontFace{false};					//Whether the ray collided from the outside of the object, or the inside. true -> ray came from outside.
 
-	void setNormalDirection(const Ray& inRay, const Vec3D& outwardNormal) {
+	void setNormalDirection(const Ray& inRay, const Physics::PhysicsVector<3>& outwardNormal) {
 		//If the ray is already pointing against the normal, then their dot product will be < 0.
 		m_frontFace = inRay.direction().innerProduct(outwardNormal) < 0;
 		//Once that's calculated, we adjust our normal to guarantee it is pointing against the ray.
-		m_normal = (m_frontFace) ? static_cast<Vec3D>(outwardNormal) : static_cast<Vec3D>( - outwardNormal);
+		m_normal = (m_frontFace) ? static_cast<Physics::PhysicsVector<3>>(outwardNormal) : static_cast<Physics::PhysicsVector<3>>( - outwardNormal);
 	}
 };
 
@@ -46,7 +47,7 @@ public:
 	virtual double minDistanceApart() const = 0;
 
 	//All objects must have a center, and it is very helpful to be able to access where it is.
-	virtual Vec3D getCenter() const = 0;
+	virtual Physics::PhysicsVector<3> getCenter() const = 0;
 };
 
 #endif

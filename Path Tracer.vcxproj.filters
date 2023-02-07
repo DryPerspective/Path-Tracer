@@ -39,7 +39,7 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Vec3D.cpp">
+    <ClCompile Include="VectorFunc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,7 +74,7 @@
     <ClInclude Include="Dielectric.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Vec3D.h">
+    <ClInclude Include="VectorFunc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

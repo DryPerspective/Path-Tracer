@@ -8,27 +8,27 @@
 */
 
 
-#include "Vec3D.h"
+#include "PhysicsVector.h"
 
 
 class Ray
 {
 
 private:
-	Vec3D m_origin;
-	Vec3D m_direction;
+	Physics::PhysicsVector<3> m_origin;
+	Physics::PhysicsVector<3> m_direction;
 
 public:
-	//Basic constructors. Since the only member data are Vec3D and the default constructor for that object will properly initialise the object, we shouldn't need to worry about that here.
+	//Basic constructors. Since the only member data are Physics::PhysicsVector<3> and the default constructor for that object will properly initialise the object, we shouldn't need to worry about that here.
 	Ray() {}
-	Ray(const Vec3D& origin, const Vec3D& direction) :m_origin(origin), m_direction(direction) {}
+	Ray(const Physics::PhysicsVector<3>& origin, const Physics::PhysicsVector<3>& direction) :m_origin(origin), m_direction(direction) {}
 
 	//Getters for our encapsulated data.
-	const Vec3D& origin() const; 
-	const Vec3D& direction() const;
+	const Physics::PhysicsVector<3>& origin() const; 
+	const Physics::PhysicsVector<3>& direction() const;
 
 	//This is the big function. Returning the position along a ray. Follows the equation position = origin + distance * direction
-	Vec3D at(double inDistance) const; 
+	Physics::PhysicsVector<3> at(double inDistance) const; 
 };
 
 #endif

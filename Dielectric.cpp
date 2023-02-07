@@ -1,14 +1,14 @@
 #include "Dielectric.h"
 
+#include "VectorFunc.h"
 
-
-bool Dielectric::isScattered(const Ray& inRay, const HitRecord& inRecord, Vec3D& inColourAtten, Ray& scatteredRay) const {
+bool Dielectric::isScattered(const Ray& inRay, const HitRecord& inRecord, Physics::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const {
 	//Attenuation goes to white because the light is never absorbed.
-	inColourAtten = Vec3D{ 1,1,1 };
+	inColourAtten = Physics::PhysicsVector<3>{ 1,1,1 };
 	//Assuming that we are moving between air with refractive index of exactly 1 and this material
 	double refractionRatio{ (inRecord.m_frontFace) ? (1 / m_refractiveIndex) : m_refractiveIndex };
 
-	Vec3D outwardsDirection;
+	Physics::PhysicsVector<3> outwardsDirection;
 
 	//Calculate total internal reflection. Our refraction is based on Snell's law, however there exists a set of possible values where Snell's law has no solution.
 	//Since sin(theta) can never be bigger than 1, what happens if we set up our system such that it does?
@@ -29,11 +29,11 @@ bool Dielectric::isScattered(const Ray& inRay, const HitRecord& inRecord, Vec3D&
 
 	if (refractionForbidden || reflectBecauseFresnel) {
 		//Calculate the outwards ray direction by perfect reflection
-		outwardsDirection = Vec3D::smoothReflect(inRay.direction().getUnitVector(), inRecord.m_normal);
+		outwardsDirection = smoothReflect(inRay.direction().getUnitVector(), inRecord.m_normal);
 	}
 	else {
 		//Calculate our outwards ray direction by refraction (details on how in the Vector3D class)
-		outwardsDirection = Vec3D::refract(inRay.direction(), inRecord.m_normal, refractionRatio);
+		outwardsDirection = refract(inRay.direction(), inRecord.m_normal, refractionRatio);
 	}
 
 

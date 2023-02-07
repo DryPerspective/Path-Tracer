@@ -15,12 +15,12 @@ class Sphere : public Hittable
 	
 
 private:
-	Vec3D							m_center;
+	Physics::PhysicsVector<3>		m_center;
 	double							m_radius;
 	std::shared_ptr<Material>		m_material;
 
 public:
-	Sphere(Vec3D inCenter, double inRadius, std::shared_ptr<Material> inMat) :m_center(inCenter), m_radius(inRadius), m_material(inMat) {}
+	Sphere(Physics::PhysicsVector<3> inCenter, double inRadius, std::shared_ptr<Material> inMat) :m_center(inCenter), m_radius(inRadius), m_material(inMat) {}
 
 
 	//This function calculates whether an incoming ray has hit the sphere, and updates the HitRecord with information about the impact.
@@ -40,7 +40,7 @@ public:
 	virtual double minDistanceApart() const override;
 
 	//The center is member data here so easy to return.
-	virtual Vec3D getCenter() const override;
+	virtual Physics::PhysicsVector<3> getCenter() const override;
 };
 #endif
 

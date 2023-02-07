@@ -21,7 +21,7 @@ private:
 public:
 	Dielectric(double inIndex) :m_refractiveIndex(inIndex) {}
 
-	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, Vec3D& inColourAtten, Ray& scatteredRay) const override;
+	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, Physics::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const override;
 
 	//Calculate the reflection coefficient according to the Schlick approximation.
 	//Namely, R(theta) = R_0 + (1-R_0)(1-cos(theta))^5, where R_0 = ((n-n')/n+n'))^2

@@ -6,7 +6,7 @@
 *  the distribution of scattering directions for real Lambertian materials.
 */
 
-
+#include "PhysicsVector.h"
 #include "Material.h"
 
 
@@ -15,11 +15,11 @@ class Lambertian : public Material
 	
 
 private:
-	Vec3D m_albedoColour;
+	Physics::PhysicsVector<3> m_albedoColour;
 public:
-	Lambertian(const Vec3D& inColour) : m_albedoColour(inColour) {}
+	Lambertian(const Physics::PhysicsVector<3>& inColour) : m_albedoColour(inColour) {}
 
-	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, Vec3D& inColourAtten, Ray& scatteredRay) const override;
+	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, Physics::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const override;
 };
 #endif
 
