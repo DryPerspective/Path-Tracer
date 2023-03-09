@@ -18,7 +18,7 @@
 #include <thread>
 
 
-#include "Vector3D.h"
+
 #include "Ray.h"
 #include "HittableList.h"
 #include "Sphere.h"
@@ -32,20 +32,10 @@
 #include "SimpleTimer.h"
 
 
-//A couple of type aliases to reduce confusion around exactly what we're talking about, and because most objects here are made from templates.
-// I know templating everything isn't strictly necessary, but I felt it provided good portability (I've seen some people swear by using floats instead of doubles, for instance),
-// as well as being a good test of my skills to make sure I used them correctly.
-//Note that I also only instantiate templated objects using these aliases, meaning you need only change these lines to change the datatype used everywhere else.
-//It also means there should be no type mismatches and errors which result from that. I do not recommend changing these aliases to different types from each other.
-//
-//
-using numberType = double;                 //The basic numerical type used to pass around floating point numbers.
-using point3D = Physics::PhysicsVector<3>;
-using direction3D = Physics::PhysicsVector<3>;
-using colour = Physics::PhysicsVector<3>;    //This may seem counterintuitive since RGB values take integer values, but we calculate over a continuous range between 0-1 and normalise to integers later.
-using ray3D = Ray;
-using sphere3D = Sphere;
-using pVector = Physics::PhysicsVector<3>;
+//A few type aliases to disambiguate exactly what is being referred to, since several different conceptual objects are all represented by the same underlying type.
+using point3D = dp::PhysicsVector<3>;
+using direction3D = dp::PhysicsVector<3>;
+using colour = dp::PhysicsVector<3>;    
 
 
 /*
@@ -54,13 +44,13 @@ using pVector = Physics::PhysicsVector<3>;
 *
 */
 //Generates a random real number between the input arguments. This distribution is only used when randomly generating and placing spheres, and when generating antialiasing rays inside a single pixel.
-numberType randNumberBetween(numberType inMin, numberType inMax) {
+double randNumberBetween(double inMin, double inMax) {
     static std::mt19937 mersenne{ std::random_device{}() };
-    std::uniform_real_distribution<numberType> distribution{ inMin,inMax };
+    std::uniform_real_distribution<double> distribution{ inMin,inMax };
     return distribution(mersenne);
 }
 //Return a value confined between two numbers
-numberType inBetween(numberType inNum, numberType inMin, numberType inMax) {
+double inBetween(double inNum, double inMin, double inMax) {
     if (inNum < inMin)return inMin;
     if (inMax < inNum)return inMax;
     return inNum;
@@ -82,7 +72,7 @@ void writeColour(std::ostream& outStream, colour outColour, int samplesPerPixel)
     auto r{ outColour.getX() };
     auto g{ outColour.getY() };
     auto b{ outColour.getZ() };
-    auto scale = 1.0 / static_cast<numberType>(samplesPerPixel);
+    auto scale = 1.0 / static_cast<double>(samplesPerPixel);
 
     //Scale them down. Sqrt is there to act as gamma correction factor.
     r = sqrt(scale*r);
@@ -98,22 +88,20 @@ void writeColour(std::ostream& outStream, colour outColour, int samplesPerPixel)
 //We keep on scattering rays until a ray never hits an object again, or until we reach the maximum number of deflections allowed.
 //Each scatter is scaled by the colour attenuation so the first scatter has the most effect etc
 //Then after going through as many objects as we can, we calculate the total colour seen by that ray and return it.
-colour calcColour(const ray3D& inRay, const Hittable& inObject, int inDepth, double infinity) {
+colour calcColour(const Ray& inRay, const Hittable& inObject, int inDepth, double infinity) {
     HitRecord tempRecord;
 
     //If we previously hit an object and have reached maximum depth
     if (inDepth <= 0)return colour{ 0, 0, 0 };
 
-
-
     //If we hit an object and have not reached maximum depth:
     //NB: use of 0.001 as the minimum bound to solve "shadow acne" issues from floating point approximation issues around t=0.
     if (inObject.isHit(inRay, 0.001, infinity, tempRecord)) {
-        ray3D scatteredRay;
+        Ray scatteredRay;
         colour attenuationColour;
         //If we can scatter cleanly, we do.
         if (tempRecord.m_materialPtr->isScattered(inRay, tempRecord, attenuationColour, scatteredRay)) {
-            return Physics::scaledByVector(calcColour(scatteredRay, inObject, inDepth - 1, infinity), (attenuationColour));
+            return dp::scaledByVector(calcColour(scatteredRay, inObject, inDepth - 1, infinity), (attenuationColour));
         }
         //Otherwise we return pure black.
         return colour{ 0, 0, 0 };
@@ -128,27 +116,24 @@ colour calcColour(const ray3D& inRay, const Hittable& inObject, int inDepth, dou
 
 int main()
 {    
-
-
-    //Image settings, measured in pixels.
-    numberType outImageAspectRatio{ 16.0/9.0 };
-    int outImageWidth{ 400 };
     
 
+    //Image settings, measured in pixels.
+    double outImageAspectRatio{ 16.0/9.0 };
+    int outImageWidth{ 400 };
+    
     //Camera settings.
     //The camera can be called with specific settings, namely (and in order): 
     // Camera position, Point the center of the camera is looking at, Camera "upwards" orientation, Camera viewport aspect ratio, camera focal length, and camera vertical FoV.
     // There is also a default constructor Camera() which creates a camera with default values.
-    pVector cameraPosition{ 8,  2,  3 };                                                               //Position of the camera, defaults to (0,0,0)
-    pVector cameraLookingAt{ 0, 0, 0 };                                                               //Point the camera is looking at and focused on. Defaults to (0,0,-1)
-    pVector cameraUpOrientation{ 0, 1, 0 };                                                       //"Upwards" orientation for the camera. Defaults to (0,1,0)
-    numberType cameraFocalLength{ 1 };                                                              //Camera focal length, i.e. the distance between the camera and the viewport. Defaults to 1
-    numberType cameraVerticalFoV{ 60 };                                                             //Camera vertical field of view angle, measured in degrees. Defaults to 60.
-    numberType cameraApertureSize{ 0.1 };                                                          //Simulated aperture size for depth of field. Defaults to 0.1
-    numberType cameraFocusDistance{ (cameraLookingAt-cameraPosition).length() };                    //Simulated focus distance for depth of field. Defaults to 10.
-   
-    
-
+    point3D cameraPosition{ 8,  2,  3 };                                                         //Position of the camera, defaults to (0,0,0)
+    point3D cameraLookingAt{ 0, 0, 0 };                                                          //Point the camera is looking at and focused on. Defaults to (0,0,-1)
+    point3D cameraUpOrientation{ 0, 1, 0 };                                                      //"Upwards" orientation for the camera. Defaults to (0,1,0)
+    double cameraFocalLength{ 1 };                                                               //Camera focal length, i.e. the distance between the camera and the viewport. Defaults to 1
+    double cameraVerticalFoV{ 60 };                                                              //Camera vertical field of view angle, measured in degrees. Defaults to 60.
+    double cameraApertureSize{ 0.1 };                                                            //Simulated aperture size for depth of field. Defaults to 0.1
+    double cameraFocusDistance{ (cameraLookingAt-cameraPosition).length() };                     //Simulated focus distance for depth of field. Defaults to 10.
+ 
     //Antialiasing value of number of slightly randomised rays to send per pixel.
     int raysPerPixel{ 100 };
 
@@ -157,10 +142,10 @@ int main()
 
     int numberOfThreads{ 4 };
 
-
+    //Try to initialize our values from the config file
     try {
         std::cout << "Loading settings from configuration file.\n";
-        IO::ConfigReader config("config.txt");
+        dp::ConfigReader config("config.txt");
         //Image Settings
         config.readValue("imageAspectRatio", outImageAspectRatio);
         config.readValue("imageWidth", outImageWidth);
@@ -179,7 +164,9 @@ int main()
 
         std::cout << "All values read from file correctly.\n";
     }
-    catch (IO::ConfigReader::ConfigException& except) {
+    catch (dp::ConfigReader::ConfigException& except) {
+    //We make the choice to be all-or-nothing on our config values. Either they all must read cleanly or we use default values. 
+    //This would prevent some unexpected weirdness if only half the pertinent data is read.
         std::cout << "Error reading data from config.txt: " << except.what() << '\n';
         std::cout << "Loading default values for those variables.\n";
         outImageAspectRatio = 16.0 / 9.0;
@@ -221,11 +208,11 @@ int main()
     //We create our list of objects, and instantiate the four larger spheres we use as a clear demo for the materials.
     //We also create one very large sphere to act as the ground.
     HittableList worldObjects;
-    worldObjects.add(std::make_shared<sphere3D>(point3D{ 2,      1,  4 }, 1, materialRedDiffuse));      //A small sphere to act as our test case. NB: original position of (0,1,0)
-    worldObjects.add(std::make_shared<sphere3D>(point3D{ 0, -1000,  -1 }, 1000, materialGround));    //A big sphere to act as the ground
-    worldObjects.add(std::make_shared<sphere3D>(point3D{ 0,     1,  2 }, 1, materialDielectric));
-    worldObjects.add(std::make_shared<sphere3D>(point3D{ 0,      1,  -2 }, 1, materialGreyFuzzy));
-    worldObjects.add(std::make_shared<sphere3D>(point3D{ 2,      1,  -6 }, 1, materialGreyMetal));
+    worldObjects.add(std::make_shared<Sphere>(point3D{ 2,      1,  4 }, 1, materialRedDiffuse));      //A small sphere to act as our test case. NB: original position of (0,1,0)
+    worldObjects.add(std::make_shared<Sphere>(point3D{ 0, -1000,  -1 }, 1000, materialGround));    //A big sphere to act as the ground
+    worldObjects.add(std::make_shared<Sphere>(point3D{ 0,     1,  2 }, 1, materialDielectric));
+    worldObjects.add(std::make_shared<Sphere>(point3D{ 0,      1,  -2 }, 1, materialGreyFuzzy));
+    worldObjects.add(std::make_shared<Sphere>(point3D{ 2,      1,  -6 }, 1, materialGreyMetal));
 
     
     //Next we want to generate a large amount of random spheres to populate our scene. Random sphere choice makes for a better test of the system than a premade case.
@@ -274,12 +261,12 @@ int main()
 
         //We want mostly diffuse
         if (randomNumberForMaterial < 0.6) {
-            colour sphereColour{ Physics::randVector(0,1) };
+            colour sphereColour{ dp::randVector(0,1) };
             sphereMaterial = std::make_shared<Lambertian>(sphereColour);
         }
         //With about 30% metallic.
         else if (randomNumberForMaterial < 0.9) {
-            colour sphereColour{ Physics::randVector(0.6,1) };
+            colour sphereColour{ dp::randVector(0.6,1) };
             auto randomFuzziness{ randNumberBetween(0,1) / 2 };
             sphereMaterial = std::make_shared<Metal>(sphereColour, randomFuzziness);
             
@@ -290,7 +277,7 @@ int main()
         }
 
         //And after creating our position, radius, and material, we add the sphere to our scene.
-        worldObjects.add(std::make_shared<sphere3D>(sphereCenter, randomNumberForRadius, sphereMaterial));
+        worldObjects.add(std::make_shared<Sphere>(sphereCenter, randomNumberForRadius, sphereMaterial));
     }
 
 
@@ -303,7 +290,7 @@ int main()
     outImageStream << "P3\n" << outImageWidth << ' ' << outImageHeight << "\n255\n";
 
     //Constant infinity required for calculating if a ray has not collided with anything.
-    constexpr numberType infinity = std::numeric_limits<numberType>::infinity();
+    constexpr double infinity = std::numeric_limits<double>::infinity();
 
     //For each pixel, we sum the values of all the colours read by each ray, and then divide them through by the number of rays per pixel in the writeColour function
     //This closure class allows us to generate rays, bounce them off the various objects, and create a composite colour representing all the rays it simulates.
@@ -312,10 +299,10 @@ int main()
         while (--raysToCalc >= 0) {   //>= to prevent an off-by-one when counting down
             //For each pixel, generate rays distributed randomly inside that pixel (antialiasing step)
             //Generate X/Y coordinates normalised inside a particular pixel                
-            auto normalisedX = static_cast<numberType>(i + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageWidth) - 1);
-            auto normalisedY = static_cast<numberType>(j + randNumberBetween(0, 1)) / (static_cast<numberType>(outImageHeight) - 1);
+            auto normalisedX = static_cast<double>(i + randNumberBetween(0, 1)) / (static_cast<double>(outImageWidth) - 1);
+            auto normalisedY = static_cast<double>(j + randNumberBetween(0, 1)) / (static_cast<double>(outImageHeight) - 1);
             //Then add them to a ray
-            ray3D currentRay = simCamera.getCurrentRay(normalisedX, normalisedY);
+            Ray currentRay = simCamera.getCurrentRay(normalisedX, normalisedY);
             //And sum them into the colour
             partialColour += calcColour(currentRay, worldObjects, materialMaximumDepth, infinity);
         }

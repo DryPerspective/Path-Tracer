@@ -18,7 +18,7 @@ class Camera final
 {
 
 private:
-	using Vec3D = Physics::PhysicsVector<3>;
+	using Vec3D = dp::PhysicsVector<3>;
 
 	//Member data. Some default velues are provided.
 	Vec3D m_cameraPosition{ 0,0,0 };
@@ -57,8 +57,8 @@ public:
 
 	//And this one allows us to customise our camera.
 	Camera(Vec3D inPosition, Vec3D inLookingAt, Vec3D inUp, double inRatio,  double inFocalLength, double inVFoV, double inAperture, double inFocusDist) 
-		: m_cameraPosition(inPosition), m_cameraLookingAt(inLookingAt), m_cameraUpOrientation(inUp), m_aspectRatio(inRatio),  m_focalLength{ inFocalLength }, m_fieldOfView(inVFoV),
-		  m_apertureSize(inAperture), m_focusDistance(inFocusDist)
+		: m_cameraPosition{ inPosition }, m_cameraLookingAt{ inLookingAt }, m_cameraUpOrientation{ inUp }, m_aspectRatio{ inRatio }, m_focalLength{ inFocalLength }, m_fieldOfView{ inVFoV },
+		m_apertureSize{ inAperture }, m_focusDistance{ inFocusDist }
 	{
 		setupCamera();
 	}

@@ -2,13 +2,13 @@
 
 #include "VectorFunc.h"
 
-bool Dielectric::isScattered(const Ray& inRay, const HitRecord& inRecord, Physics::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const {
+bool Dielectric::isScattered(const Ray& inRay, const HitRecord& inRecord, dp::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const {
 	//Attenuation goes to white because the light is never absorbed.
-	inColourAtten = Physics::PhysicsVector<3>{ 1,1,1 };
+	inColourAtten = dp::PhysicsVector<3>{ 1,1,1 };
 	//Assuming that we are moving between air with refractive index of exactly 1 and this material
 	double refractionRatio{ (inRecord.m_frontFace) ? (1 / m_refractiveIndex) : m_refractiveIndex };
 
-	Physics::PhysicsVector<3> outwardsDirection;
+	dp::PhysicsVector<3> outwardsDirection;
 
 	//Calculate total internal reflection. Our refraction is based on Snell's law, however there exists a set of possible values where Snell's law has no solution.
 	//Since sin(theta) can never be bigger than 1, what happens if we set up our system such that it does?

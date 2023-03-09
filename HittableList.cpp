@@ -39,8 +39,8 @@ double HittableList::minDistanceApart() const {
 	return 0;															//Trivial solution as this function doesn't really apply to this object.								
 }
 
-Physics::PhysicsVector<3> HittableList::getCenter() const {
-	Physics::PhysicsVector<3> center{ 0,0,0 };
+dp::PhysicsVector<3> HittableList::getCenter() const {
+	dp::PhysicsVector<3> center{ 0,0,0 };
 	for (const auto& hittable : m_objectList) {
 		center += hittable->getCenter();
 	}

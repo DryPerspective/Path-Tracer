@@ -9,18 +9,20 @@
 
 #include "Hittable.h"
 
+#include "PhysicsVector.h"
+
 
 class Sphere : public Hittable
 {
 	
 
 private:
-	Physics::PhysicsVector<3>		m_center;
+	dp::PhysicsVector<3>			m_center;
 	double							m_radius;
 	std::shared_ptr<Material>		m_material;
 
 public:
-	Sphere(Physics::PhysicsVector<3> inCenter, double inRadius, std::shared_ptr<Material> inMat) :m_center(inCenter), m_radius(inRadius), m_material(inMat) {}
+	Sphere(dp::PhysicsVector<3> inCenter, double inRadius, std::shared_ptr<Material> inMat) :m_center{ inCenter }, m_radius{ inRadius }, m_material{ inMat } {}
 
 
 	//This function calculates whether an incoming ray has hit the sphere, and updates the HitRecord with information about the impact.
@@ -40,7 +42,7 @@ public:
 	virtual double minDistanceApart() const override;
 
 	//The center is member data here so easy to return.
-	virtual Physics::PhysicsVector<3> getCenter() const override;
+	virtual dp::PhysicsVector<3> getCenter() const override;
 };
 #endif
 

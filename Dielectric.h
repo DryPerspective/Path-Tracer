@@ -10,6 +10,7 @@
 
 #include <random> //For rng when calculating whether to transmit or reflect
 
+#include "PhysicsVector.h"
 #include "Material.h"
 
 
@@ -19,9 +20,9 @@ class Dielectric : public Material
 private:
 	double m_refractiveIndex;		//The refractive index of the material.
 public:
-	Dielectric(double inIndex) :m_refractiveIndex(inIndex) {}
+	Dielectric(double inIndex) :m_refractiveIndex{ inIndex } {}
 
-	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, Physics::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const override;
+	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, dp::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const override;
 
 	//Calculate the reflection coefficient according to the Schlick approximation.
 	//Namely, R(theta) = R_0 + (1-R_0)(1-cos(theta))^5, where R_0 = ((n-n')/n+n'))^2

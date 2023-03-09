@@ -15,11 +15,11 @@ class Lambertian : public Material
 	
 
 private:
-	Physics::PhysicsVector<3> m_albedoColour;
+	dp::PhysicsVector<3> m_albedoColour;
 public:
-	Lambertian(const Physics::PhysicsVector<3>& inColour) : m_albedoColour(inColour) {}
+	Lambertian(const dp::PhysicsVector<3>& inColour) : m_albedoColour{ inColour } {}
 
-	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, Physics::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const override;
+	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, dp::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const override;
 };
 #endif
 

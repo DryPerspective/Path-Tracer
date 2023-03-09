@@ -11,6 +11,8 @@
 #include <memory> //For shared pointers
 #include <vector> //For vectors (the standard library kind).
 
+#include "PhysicsVector.h"
+
 #include "Hittable.h"
 
 
@@ -39,7 +41,7 @@ public:
 	virtual double minDistanceApart() const override;
 
 	//Return the center of all points in the system, on "average"
-	virtual Physics::PhysicsVector<3> getCenter() const override;
+	virtual dp::PhysicsVector<3> getCenter() const override;
 
 };
 #endif
