@@ -8,27 +8,27 @@
 */
 
 
-#include "Vector3D.h"
+#include "PhysicsVector.h"
 
 
-template <typename U>
 class Ray
 {
+
 private:
-	Vector3D<U> m_origin;
-	Vector3D<U> m_direction;
+	dp::PhysicsVector<3> m_origin;
+	dp::PhysicsVector<3> m_direction;
 
 public:
-	//Basic constructors. Since the only member data are Vector3D and the default constructor for that object will properly initialise the object, we shouldn't need to worry about that here.
+	//Basic constructors. Since the only member data are dp::PhysicsVector<3> and the default constructor for that object will properly initialise the object, we shouldn't need to worry about that here.
 	Ray() {}
-	Ray(const Vector3D<U>& origin, const Vector3D<U>& direction) :m_origin(origin), m_direction(direction) {}
+	Ray(const dp::PhysicsVector<3>& origin, const dp::PhysicsVector<3>& direction) :m_origin{ origin }, m_direction{ direction } {}
 
 	//Getters for our encapsulated data.
-	const Vector3D<U>& origin() const { return m_origin; }
-	const Vector3D<U>& direction() const { return m_direction; }
+	const dp::PhysicsVector<3>& origin() const; 
+	const dp::PhysicsVector<3>& direction() const;
 
 	//This is the big function. Returning the position along a ray. Follows the equation position = origin + distance * direction
-	Vector3D<U> at(U inDistance) const { return m_origin + m_direction.scaledBy(inDistance); }
+	dp::PhysicsVector<3> at(double inDistance) const; 
 };
 
 #endif

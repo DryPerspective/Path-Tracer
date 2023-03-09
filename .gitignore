@@ -361,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Path Tracer - 9-2-22.zip
+/Path Tracer - 28-9-22.zip
+/outputImageTimeSeed.ppm
+/outputImageHalfDone.ppm
+/outputImage250Spheres.ppm
+/outputImage1kSpheres.ppm
+/outputImage1200Size.ppm
+/outputImage1.ppm
+/outputImage.ppm

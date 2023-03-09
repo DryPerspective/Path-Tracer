@@ -11,59 +11,37 @@
 #include <memory> //For shared pointers
 #include <vector> //For vectors (the standard library kind).
 
+#include "PhysicsVector.h"
+
 #include "Hittable.h"
 
-template <typename T>
-class HittableList : public Hittable<T>
+
+class HittableList : public Hittable
 {
+	
 private:
-	std::vector<std::shared_ptr<Hittable<T>>> m_objectList;			//Our list of objects.
+	std::vector<std::shared_ptr<Hittable>> m_objectList;			//Our list of objects.
 
 public:
 	//Constructor
 	HittableList() {}
-	HittableList(std::shared_ptr<Hittable<T>> inObject) { add(inObject); }
+	HittableList(std::shared_ptr<Hittable> inObject) { add(inObject); }
 
 	//Basic list manipulation
-	void add(std::shared_ptr<Hittable<T>> inObject) { m_objectList.push_back(inObject); }
-	void clear() { m_objectList.clear(); }
-	const Hittable<T>& operator[](T inIndex) { return *(m_objectList[inIndex]); }
-	int length() { return m_objectList.size(); }
-
-	
+	void add(std::shared_ptr<Hittable> inObject);
+	void clear(); 
+	const Hittable& operator[](std::size_t inIndex);
+	std::size_t length();
 
 
 	//And let's not forget our isHit function. Because this is a list of objects, we need to only return the closest object to the camera that we've hit.
-	bool isHit(const Ray<T>& inRay, T t_min, T t_max, HitRecord<T>& inRec) const override {
-		HitRecord<T> tempRecord;
-		bool isHitAnything{ false };
-		auto closestSoFar{ t_max };
-
-		//Iterate over our list.
-		for (const auto& hittable : m_objectList) {
-			if (hittable->isHit(inRay, t_min, closestSoFar, tempRecord)) {	//If something is hit (and remember this function will updated tempRecord with details if so)
-				isHitAnything = true;										//We hit something!
-				closestSoFar = tempRecord.m_interval;
-				inRec = tempRecord;											//Only update our hit record if we actually hit something.
-			}
-		}
-
-		return isHitAnything;
-	}
+	bool isHit(const Ray& inRay, double t_min, double t_max, HitRecord& inRec) const override;
 
 	//This function doesn't really make sense for a list of objects, but we must include an override.
-	virtual T minDistanceApart() const override {
-		return 0;
-	}
+	virtual double minDistanceApart() const override;
 
 	//Return the center of all points in the system, on "average"
-	virtual Vector3D<T> getCenter() const override {
-		Vector3D<T> center(0, 0, 0);
-		for (const auto& hittable : m_objectList) {
-			center += hittable->getCenter();
-		}
-		T scale{ static_cast<T>(1.0) / static_cast<T>(m_objectList.size()) };
-		return center.scaledBy(scale);
-	}
+	virtual dp::PhysicsVector<3> getCenter() const override;
+
 };
 #endif
