@@ -5,7 +5,7 @@
 
 #Image Settings
 imageAspectRatio = 1.7777777777 	#Can't parse a ratio format so we do the division. Default: 1.777777777 (16:9)
-imageWidth 	 = 200			#Measured in pixels. Default: 400.
+imageWidth 	 = 400			#Measured in pixels. Default: 400.
 
 #Simulation Settings
 raysPerPixel	 = 100			#Number of slightly randomised rays per pixel, for antialiasing. Default: 100

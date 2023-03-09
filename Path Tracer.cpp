@@ -16,6 +16,7 @@
 #include <cstdio>           //This and the above includes used to create and write to an output file (and the console)
 #include <random>           //For the mersenne twister used to generate random spheres
 #include <thread>
+#include <future>
 
 
 
@@ -29,7 +30,6 @@
 #include "ConfigReader.h"
 #include "VectorFunc.h"
 
-#include "SimpleTimer.h"
 
 
 //A few type aliases to disambiguate exactly what is being referred to, since several different conceptual objects are all represented by the same underlying type.
@@ -50,15 +50,11 @@ double randNumberBetween(double inMin, double inMax) {
     return distribution(mersenne);
 }
 //Return a value confined between two numbers
-double inBetween(double inNum, double inMin, double inMax) {
+constexpr double inBetween(double inNum, double inMin, double inMax) {
     if (inNum < inMin)return inMin;
     if (inMax < inNum)return inMax;
     return inNum;
 }
-
-
-
-
 
 /*
 *
@@ -294,8 +290,8 @@ int main()
 
     //For each pixel, we sum the values of all the colours read by each ray, and then divide them through by the number of rays per pixel in the writeColour function
     //This closure class allows us to generate rays, bounce them off the various objects, and create a composite colour representing all the rays it simulates.
-    auto sumColour = [outImageHeight, outImageWidth, infinity, &worldObjects, materialMaximumDepth, &simCamera](colour& partialColour, int i, int j, int raysToCalc) {
-
+    auto sumColour = [outImageHeight, outImageWidth, infinity, &worldObjects, materialMaximumDepth, &simCamera](int i, int j, int raysToCalc) {
+        colour col;
         while (--raysToCalc >= 0) {   //>= to prevent an off-by-one when counting down
             //For each pixel, generate rays distributed randomly inside that pixel (antialiasing step)
             //Generate X/Y coordinates normalised inside a particular pixel                
@@ -304,8 +300,9 @@ int main()
             //Then add them to a ray
             Ray currentRay = simCamera.getCurrentRay(normalisedX, normalisedY);
             //And sum them into the colour
-            partialColour += calcColour(currentRay, worldObjects, materialMaximumDepth, infinity);
+            col += calcColour(currentRay, worldObjects, materialMaximumDepth, infinity);
         }
+        return col;
     };
 
     //The conceptually simple way for each thread to count up how many rays it needs to send would be an atomic variable shared between all threads to act as a counter.
@@ -315,49 +312,40 @@ int main()
 
     //Note that I use j as the outer variable here. While not the usual convention this is by design. It's easier to think as position[i][j] as analogous to position(x,y).
     //This preserves that while allowing for a proper scanline countdown.
-    utility::SimpleTimer t;
     for (int j = outImageHeight-1; j >=0; --j) {
         std::cout << "Scanlines Remaining: " << j << '\n';
         for (int i = 0; i < outImageWidth; ++i) {
-            
-            colour pixelColour{ 0, 0, 0 };
-            colour pixelColour2{ 0,0,0 };           
-
 
             /*
             * Concurrency time.The design decision was made to use multithreading at the level of rays per pixel.
             * This is because within each pixel, the process of casting a ray happens completely independently of the other rays cast within that pixel,
             * and this level had he added benefit that the total result for each pixel is a simple sum of the result of each ray's calculation.
-            * This means that each thread's calculation can be performed independently, and summed into some thread-local "total" colour for that thread.
-            * After every thread has been rejoined, their colours could be summed into the final colour value for that pixel and written to the file.
-            */
-            //"Partial" colours - one per thread.
-            std::vector<colour> partialColours(numberOfThreads, { 0,0,0 });            
-            std::vector<std::thread> threads;
+            * Using a task-based design, we rely on the benefits offered by std::async to launch our threads, return their result inside each thread's future,
+            * and simply add the results together.
+            */    
+            
+            colour resultColour;
 
-            //In the event that raysPerPixel % numberOfThreads != 0, raysPerThread will undercount the amount of rays needed per thread.
-            //As such, if such a descrepency exists, the otherwise missing rays are calculated on the first thread.
-            threads.emplace_back(sumColour, std::ref(partialColours[0]), i, j, raysPerThread + (raysPerPixel % numberOfThreads));
+            std::vector<std::future<colour>> threads;
 
-
+            //In the event that raysPerThread * numberOfThreads does not exactly equal the total number of rays we need to cast, we would otherwise undercount the number of rays needed.
+            //To balance this out, we add any rays we would otherwise miss out on to the first thread we launch.
+            threads.push_back(std::async(sumColour, i, j, raysPerThread + (raysPerPixel % numberOfThreads)));
+            
+            //Then all subsequent threads just pick up the standard rays per thread.
             for (auto s = 1; s < numberOfThreads; ++s) {
-                threads.emplace_back(sumColour, std::ref(partialColours[s]),i ,j, raysPerThread);
+                threads.push_back(std::async(sumColour, i, j, raysPerThread));
             }
-            for (auto& t : threads) {
-                t.join();
+
+            for (auto& sync : threads) {
+                resultColour += sync.get();
             }
-            colour resultColour{};
-            for (auto& col : partialColours) {
-                resultColour += std::move(col);
-            }
-            
-            
+
             //Then once we have our composite colour from all rays, use this function to scale it accordingly and write it to the file.
             writeColour(outImageStream,resultColour,raysPerPixel);
 
             
         }
     }
-    std::cout << "Elapsed: " << t.elapsed();
 }
 
