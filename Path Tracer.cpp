@@ -65,9 +65,9 @@ constexpr double inBetween(double inNum, double inMin, double inMax) {
 //A function which takes a colour containing values normalised between 0 and 1, renormalises it to the RGB color range, and writes to the output stream.
 //This is where division by number of samples per pixel takes place.
 void writeColour(std::ostream& outStream, colour outColour, int samplesPerPixel) {
-    auto r{ outColour.getX() };
-    auto g{ outColour.getY() };
-    auto b{ outColour.getZ() };
+    auto r{ outColour.x() };
+    auto g{ outColour.y() };
+    auto b{ outColour.z() };
     auto scale = 1.0 / static_cast<double>(samplesPerPixel);
 
     //Scale them down. Sqrt is there to act as gamma correction factor.
@@ -106,7 +106,7 @@ colour calcColour(const Ray& inRay, const Hittable& inObject, int inDepth, doubl
 
     //Background work below here, only triggered if the ray doesn't touch anything. Currently a linear scale from blue to white.
     direction3D unitDirection = inRay.direction().getUnitVector();
-    auto backgroundT = 0.5 * (unitDirection.getY() + 1);                                                            //Get a linear scalar along the y axis.
+    auto backgroundT = 0.5 * (unitDirection.y() + 1);                                                            //Get a linear scalar along the y axis.
     return  colour{ 1.0, 1.0, 1.0 }.scaledBy(1.0 - backgroundT) + colour{ 0.5, 0.7, 1.0 }.scaledBy(backgroundT);      //And return a colour following a blue/white scale.
 }
 

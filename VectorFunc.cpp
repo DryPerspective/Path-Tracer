@@ -57,7 +57,7 @@ namespace dp {
 	dp::PhysicsVector<3> randInUnitDisk() {
 		while (true) {
 			dp::PhysicsVector<3> Vec{ randVector(-1,1) };	//Start off with a vector on the unit cube
-			Vec.setZ(0);										//Then set its Z component to 0 to get one on the disk.
+			Vec.z() = 0;										//Then set its Z component to 0 to get one on the disk.
 			if (Vec.lengthSquared() >= 1)continue;				//Reject it if it's outside the unit disk
 			return Vec;											//Otherwise return it.
 		}

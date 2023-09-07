@@ -39,7 +39,7 @@ Ray Camera::getCurrentRay(double inputX, double inputY) const {
 	//Generate an offset on the unit disk and scale it by the thin lens radius (determined by aperture size)
 	Vec3D randDiskVector{ dp::randInUnitDisk().scaledBy(m_lensRadius) };
 	//Then orient it with the camera.
-	Vec3D apertureOffset{ m_positiveHorizontal.scaledBy(randDiskVector.getX()) + m_positiveVertical.scaledBy(randDiskVector.getY()) };
+	Vec3D apertureOffset{ m_positiveHorizontal.scaledBy(randDiskVector.x()) + m_positiveVertical.scaledBy(randDiskVector.y()) };
 
 	//And return it in the ray.
 	return Ray(m_cameraPosition + apertureOffset, m_lowerLeftCorner + m_horizontalDirection.scaledBy(inputX) + m_verticalDirection.scaledBy(inputY) - m_cameraPosition - apertureOffset);
