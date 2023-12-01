@@ -178,6 +178,9 @@
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="VectorFunc.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\MyLib\MyLib\MyLib.lib" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

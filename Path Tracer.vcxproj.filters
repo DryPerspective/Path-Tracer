@@ -75,4 +75,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\MyLib\MyLib\MyLib.lib" />
+  </ItemGroup>
 </Project>

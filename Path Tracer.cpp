@@ -150,12 +150,13 @@ int main()
         config.readValue("materialMaxDepth", materialMaximumDepth);
         config.readValue("numberOfThreads", numberOfThreads);
         //Camera Settings
-        config.readValue("cameraPosition", cameraPosition);
-        config.readValue("cameraLookingAt", cameraLookingAt);
-        config.readValue("cameraUpOrient", cameraUpOrientation);
+        readVector(config.getValue("cameraPosition"), cameraPosition);        
+        readVector(config.getValue("cameraLookingAt"), cameraLookingAt);
+        readVector(config.getValue("cameraUpOrient"), cameraUpOrientation);
         config.readValue("focalLength", cameraFocalLength);
         config.readValue("verticalFOV", cameraVerticalFoV);
         config.readValue("apertureSize", cameraApertureSize);
+        
         config.close();
 
         std::cout << "All values read from file correctly.\n";
