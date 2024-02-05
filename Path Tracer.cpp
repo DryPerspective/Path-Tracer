@@ -143,21 +143,21 @@ int main()
         std::cout << "Loading settings from configuration file.\n";
         dp::ConfigReader config("config.txt");
         //Image Settings
-        config.readValue("imageAspectRatio", outImageAspectRatio);
-        config.readValue("imageWidth", outImageWidth);
+        outImageAspectRatio = config.readValue("imageAspectRatio", outImageAspectRatio);
+        outImageWidth = config.readValue("imageWidth", outImageWidth);
         //Simulation Settings
-        config.readValue("raysPerPixel", raysPerPixel);
-        config.readValue("materialMaxDepth", materialMaximumDepth);
-        config.readValue("numberOfThreads", numberOfThreads);
+        raysPerPixel = config.readValue("raysPerPixel", raysPerPixel);
+        materialMaximumDepth = config.readValue("materialMaxDepth", materialMaximumDepth);
+        numberOfThreads = config.readValue("numberOfThreads", numberOfThreads);
         //Camera Settings
-        readVector(config.getValue("cameraPosition"), cameraPosition);        
-        readVector(config.getValue("cameraLookingAt"), cameraLookingAt);
-        readVector(config.getValue("cameraUpOrient"), cameraUpOrientation);
-        config.readValue("focalLength", cameraFocalLength);
-        config.readValue("verticalFOV", cameraVerticalFoV);
-        config.readValue("apertureSize", cameraApertureSize);
+        readVector(config.readValue("cameraPosition"), cameraPosition);        
+        readVector(config.readValue("cameraLookingAt"), cameraLookingAt);
+        readVector(config.readValue("cameraUpOrient"), cameraUpOrientation);
+        cameraFocalLength = config.readValue("focalLength", cameraFocalLength);
+        cameraVerticalFoV = config.readValue("verticalFOV", cameraVerticalFoV);
+        cameraApertureSize = config.readValue("apertureSize", cameraApertureSize);
         
-        config.close();
+        config.clear();
 
         std::cout << "All values read from file correctly.\n";
     }
@@ -189,6 +189,8 @@ int main()
         std::cout << "Setting total threads to " << std::thread::hardware_concurrency() << '\n';
         numberOfThreads = static_cast<int>(std::thread::hardware_concurrency());
     }
+
+    
 
     int outImageHeight{ static_cast<int>(outImageWidth / outImageAspectRatio) };
     Camera simCamera(cameraPosition, cameraLookingAt, cameraUpOrientation, outImageAspectRatio, cameraFocalLength, cameraVerticalFoV, cameraApertureSize, cameraFocusDistance);
