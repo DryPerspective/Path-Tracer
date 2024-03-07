@@ -31,8 +31,6 @@
 #include "VectorFunc.h"
 #include "ThreadPool.h"
 
-#include "SimpleTimer.h"
-
 
 
 //A few type aliases to disambiguate exactly what is being referred to, since several different conceptual objects are all represented by the same underlying type.
@@ -111,7 +109,6 @@ colour calcColour(const Ray& inRay, const Hittable& inObject, int inDepth) {
 
 int main()
 {
-    dp::SimpleTimer timer;
 
     //Image settings, measured in pixels.
     double outImageAspectRatio{ 16.0 / 9.0 };
@@ -324,7 +321,5 @@ int main()
         writeColour(outImageStream, col, raysPerPixel);
     }
 
-    std::cout << timer.elapsed() << '\n';
-    system("pause");
 }
 
