@@ -19,7 +19,7 @@ private:
 public:
 	Lambertian(const dp::PhysicsVector<3>& inColour) : m_albedoColour{ inColour } {}
 
-	virtual bool isScattered(const Ray& inRay, const HitRecord& inRecord, dp::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const override;
+	virtual bool isScattered([[maybe_unused]] const Ray& inRay, const HitRecord& inRecord, dp::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const override;
 };
 #endif
 

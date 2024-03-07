@@ -2,7 +2,7 @@
 
 #include "VectorFunc.h"
 
-bool Lambertian::isScattered(const Ray& inRay, const HitRecord& inRecord, dp::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const {
+bool Lambertian::isScattered([[maybe_unused]] const Ray& inRay, const HitRecord& inRecord, dp::PhysicsVector<3>& inColourAtten, Ray& scatteredRay) const {
 	//Calculate a scattered direction by generating a unit vector inside the unit sphere at the point of collision and with radius equal to the unit normal to the surface.
 	auto scatterDirection{ inRecord.m_normal + dp::randLambertianUnitSphere() };
 
