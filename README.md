@@ -13,17 +13,17 @@ The file PathTracer.cpp is the main file for this project.
 
 ## Notes on the code. ##
 
-The core vector object used for this simulation is the PhysicsVector object of my [basic utilities](https://github.com/DryPerspective/Basic-Utilities) library, and beyond that the design follows a fairly standard approach of dedicated classes to handle each shape, material, etc. Within the main function multiple threads are leveraged with std::async to perform an efficient simulation of the path tracing method.
+The core vector object used for this simulation is the PhysicsVector object of my [basic utilities](https://github.com/DryPerspective/Basic-Utilities) library, and beyond that the design follows a fairly standard approach of dedicated classes to handle each shape, material, etc. 
+Concurrency is achieved through use of a basic thread pool, allowing multiple rows of the output image to be calculated in parallel. One consequence of this is that rows tend to all finish processing at approximately the same time, meaning that the user display of remaining rows may appear to not be progressing, until several rows all compelete and print to the console at once.
 
 The configuration of the simulation itself can be modified by a series of settings in config.txt, which are read into the program at runtime. These can be altered to make high or low quality images, change the position and orientation of the camera, change the number of spheres generated, etc.
 As the program runs, and after these values are read, the program instantiates the five set spheres (four larger ones visible in the sample image with a fifth acting as the ground), and then generates a series of random spheres on the ground around, in random positions and with random colours and materials.
 It then simulates reverse ray tracing, pixel by pixel, to determine the colour seen at a particular point in the output image.
 
-**Compatibility:** This code has no dependencies outside of the C++ standard library. It was written in Visual Studio 19 on Windows 10 using the C++17 language standard, however should be broadly compatible. 
 
 ## Notes on Ray Tracing ##
 
-This is just a brief summary on the method of reverse raytracing in case anyone is not familiar.
+This is just a brief summary on the method of reverse raytracing for those not familiar.
 In the real world, when we see an object, it is because light from a source collided with that object, was randomly scattered, and just happened to fly in the direction of our eyes. It hits our eyes and our brain translates that into an image.
 This is the process we are simulating to draw our image. However, if we simulate that process as it is, we would be wasting considerable resources simulating all the light rays which collide with an object, and don't go anywhere near our eyes. While this is happening all the time in reality (and the vast, vast majority of the time no less), if we want efficiency we should only select rays to simulate which will contribute to the final image.
 So instead of simulating rays from the light source, to the object (or objects), and then to our eyes; we reverse the process. We simulate the rays going out of our eyes and colliding with the objects. That way, we guarantee that every single ray we simulate will contribute to the final image.
